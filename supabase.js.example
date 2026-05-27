@@ -1,0 +1,98 @@
+// ---- Supabase Configuration ----
+// Copy this file to supabase.js and fill in your values.
+// Find these in Supabase Dashboard > Settings > API.
+const SUPABASE_URL = 'https://your-project-ref.supabase.co';
+const SUPABASE_ANON_KEY = 'your-anon-key-here';
+
+// Load Supabase client from CDN
+const _supabaseModule = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+export const supabase = _supabaseModule.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ---- Task CRUD ----
+
+export async function fetchTasks() {
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .order('quadrant')
+    .order('sort_order');
+
+  if (error) {
+    console.error('Failed to fetch tasks:', error.message);
+    return [];
+  }
+  return data;
+}
+
+export async function createTask(title, quadrant) {
+  const { data: existing } = await supabase
+    .from('tasks')
+    .select('sort_order')
+    .eq('quadrant', quadrant)
+    .order('sort_order', { ascending: false })
+    .limit(1);
+
+  const sortOrder = existing && existing.length > 0 ? existing[0].sort_order + 1 : 0;
+
+  const { data, error } = await supabase
+    .from('tasks')
+    .insert({ title, quadrant, sort_order: sortOrder })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Failed to create task:', error.message);
+    return null;
+  }
+  return data;
+}
+
+export async function updateTask(id, updates) {
+  const { data, error } = await supabase
+    .from('tasks')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Failed to update task:', error.message);
+    return null;
+  }
+  return data;
+}
+
+export async function deleteTask(id) {
+  const { error } = await supabase
+    .from('tasks')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Failed to delete task:', error.message);
+    return false;
+  }
+  return true;
+}
+
+export async function reorderTasks(taskOrders) {
+  const promises = taskOrders.map(({ id, sort_order, quadrant }) =>
+    supabase.from('tasks').update({ sort_order, quadrant }).eq('id', id)
+  );
+  const results = await Promise.all(promises);
+  const failed = results.filter(r => r.error);
+  if (failed.length > 0) {
+    console.error('Some reorder updates failed:', failed.map(r => r.error.message));
+  }
+}
+
+// ---- Realtime ----
+
+export function subscribeToTasks(callback) {
+  return supabase
+    .channel('tasks-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, (payload) => {
+      callback(payload);
+    })
+    .subscribe();
+}
