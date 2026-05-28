@@ -18,7 +18,8 @@ Then open `http://localhost:8000`. ES modules require a server; `file://` won't 
 
 Four files, all ES modules loaded via `<script type="module">`:
 
-- **supabase.js** - Supabase client init (CDN import), all DB operations (CRUD, reorder, realtime subscription). Every other module imports from here.
+- **supabase.js** - Supabase client init (CDN import), all DB operations (CRUD, reorder, realtime subscription). Every other module imports from here. Reads `SUPABASE_URL` / `SUPABASE_ANON_KEY` from `config.js`.
+- **config.js** - Gitignored. Just exports the URL + anon key. Created locally from `config.example.js`, or generated at deploy time by `generate-config.mjs` from env vars.
 - **auth.js** - Magic link auth flow, session management, view toggling between auth and app. Imports `supabase` client and `initApp` from app.js.
 - **app.js** - All UI logic: rendering quadrants, task cards, drag-and-drop, inline editing, detail panel (description, status, due date, links), archive view, and realtime event handling. This is the largest file and the main entry point after auth.
 - **style.css** - Dark theme, CSS grid for 2x2 matrix layout, detail slide-out panel, archive view, status badge colors.
@@ -48,7 +49,7 @@ Realtime replication must be enabled on the tasks table in Supabase dashboard.
 
 ## Key Patterns
 
-- **No build step.** Supabase JS client is loaded via CDN ESM import (`import()` in supabase.js). All inter-file dependencies use native ES module imports.
+- **No bundler.** Supabase JS client is loaded via CDN ESM import (`import()` in supabase.js). All inter-file dependencies use native ES module imports. The only "build" is `generate-config.mjs`, which writes `config.js` from env vars for cloud deploys (Cloudflare Pages).
 - **Optimistic UI.** Local state is updated before DB writes resolve. Realtime events handle sync from other clients but skip duplicates already applied locally.
 - **Debounced saves.** Text fields in the detail panel auto-save with 500ms debounce. Dropdowns (status, date) save immediately.
 - **Drag-and-drop.** Uses native HTML drag API. On drop, all tasks in the target quadrant get their `sort_order` reassigned and batch-updated.

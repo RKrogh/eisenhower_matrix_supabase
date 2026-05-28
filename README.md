@@ -87,12 +87,21 @@ In the Supabase dashboard, go to **Database > Replication** and enable replicati
 
 ### 2. Configure the app
 
-Copy `supabase.js.example` to `supabase.js` and fill in your project URL and anon key (found in Supabase Dashboard > Settings > API):
+Config lives in `config.js` (gitignored). Create it one of two ways, using the
+values from Supabase Dashboard > Settings > API:
 
-```js
-const SUPABASE_URL = 'https://your-project.supabase.co';
-const SUPABASE_ANON_KEY = 'your-anon-key';
+```bash
+# Option A: copy the template and edit
+cp config.example.js config.js
+
+# Option B: generate it from env vars
+SUPABASE_URL='https://your-project.supabase.co' \
+SUPABASE_ANON_KEY='your-anon-key' \
+node generate-config.mjs
 ```
+
+The anon (publishable) key is meant to ship to the browser; row-level security
+on the `tasks` table is the real access boundary, not this key.
 
 ### 3. Run locally
 
@@ -105,6 +114,17 @@ Open `http://localhost:8000`. ES modules require a server; `file://` won't work.
 ### 4. Authentication
 
 The app uses Supabase magic link (email OTP). Enter your email, click the link in your inbox, and you're in. Sessions persist via refresh tokens.
+
+## Deploy to Cloudflare Pages
+
+1. Push this repo to GitHub.
+2. In Cloudflare: **Workers & Pages > Create > Pages > Connect to Git**, pick the repo.
+3. Build settings: framework preset **None**, build command `node generate-config.mjs`,
+   output directory `/`.
+4. Add environment variables `SUPABASE_URL` and `SUPABASE_ANON_KEY` (Production, and
+   Preview if you use preview deploys).
+5. In Supabase **Authentication > URL Configuration**, set the Site URL to your Pages
+   URL and add it to the redirect allow-list, so magic links redirect back correctly.
 
 ## Quadrant mapping
 

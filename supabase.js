@@ -1,8 +1,7 @@
-// ---- Supabase Configuration ----
-// Copy this file to supabase.js and fill in your values.
-// Find these in Supabase Dashboard > Settings > API.
-const SUPABASE_URL = 'https://your-project-ref.supabase.co';
-const SUPABASE_ANON_KEY = 'your-anon-key-here';
+// ---- Supabase Client ----
+// URL + anon key live in config.js, generated from env vars at build time
+// (generate-config.mjs) or copied from config.example.js for local dev.
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 
 // Load Supabase client from CDN
 const _supabaseModule = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
